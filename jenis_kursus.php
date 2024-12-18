@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_SESSION['role'] === 'admin') {
     // Proses upload gambar
     $gambar = $_FILES['gambar']['name'];
     $gambar_tmp = $_FILES['gambar']['tmp_name'];
-    $gambar_folder = 'assets/' . $gambar;  // Perbaiki path gambar (langsung di folder assets)
+    $gambar_folder = 'assets/' . $gambar;  // Path gambar
 
     // Pindahkan gambar ke folder
     if (!move_uploaded_file($gambar_tmp, $gambar_folder)) {
@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_SESSION['role'] === 'admin') {
     // Insert data ke dalam tabel jenis_kursus
     $stmt = $conn->prepare("INSERT INTO jenis_kursus (nama, deskripsi, harga, durasi, gambar) VALUES (?, ?, ?, ?, ?)");
     $stmt->bind_param("ssiss", $nama, $deskripsi, $harga, $durasi, $gambar);
-    
+
     if ($stmt->execute()) {
         echo "<script>alert('Data berhasil ditambahkan');</script>";
     } else {
@@ -37,9 +37,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_SESSION['role'] === 'admin') {
     $stmt->close();
 }
 
-// Ambil data jenis kursus dari database
-$result = $conn->query("SELECT * FROM jenis_kursus");
+// Ambil kata kunci dari parameter URL
+$search = isset($_GET['search']) ? $_GET['search'] : '';
 
+// Modifikasi query untuk menyertakan pencarian
+if ($search) {
+    $stmt = $conn->prepare("SELECT * FROM jenis_kursus WHERE nama LIKE ? OR deskripsi LIKE ?");
+    $searchParam = "%" . $search . "%";
+    $stmt->bind_param("ss", $searchParam, $searchParam);
+    $stmt->execute();
+    $result = $stmt->get_result();
+} else {
+    // Query default jika tidak ada pencarian
+    $result = $conn->query("SELECT * FROM jenis_kursus");
+}
 ?>
 
 <!DOCTYPE html>
@@ -64,13 +75,13 @@ $result = $conn->query("SELECT * FROM jenis_kursus");
                     <!-- Jika role adalah admin, tampilkan Admin Dashboard -->
                     <?php if ($_SESSION['role'] === 'admin'): ?>
                         <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
-                    <?php else: ?>
-                        <!-- Jika user biasa, tampilkan User Dashboard -->
-                        <li><a href="user_dashboard.php">Dashboard</a></li>
                     <?php endif; ?>
 
-                    <!-- Navigasi Jenis Kursus dan Logout -->
+                    <!-- Navigasi Jenis Kursus dan Logout (Tidak ada Profil untuk Admin) -->
                     <li><a href="jenis_kursus.php">Jenis Kursus</a></li>
+                    <?php if ($_SESSION['role'] !== 'admin'): ?>
+                        <li><a href="profil.php">Profil</a></li>
+                    <?php endif; ?>
                     <li><a href="logout.php">Logout</a></li>
                 <?php else: ?>
                     <!-- Jika belum login, tampilkan link login dan register -->
@@ -86,6 +97,12 @@ $result = $conn->query("SELECT * FROM jenis_kursus");
     <section class="jenis-kursus">
         <div class="container">
             <h2>Jenis Kursus yang Tersedia</h2>
+
+            <!-- Form Pencarian -->
+            <form action="jenis_kursus.php" method="GET">
+                <input type="text" name="search" placeholder="Cari kursus..." value="<?php echo isset($_GET['search']) ? $_GET['search'] : ''; ?>">
+                <button type="submit">Cari</button>
+            </form>
             
             <!-- Form Tambah Kursus (Hanya Tampil untuk Admin) -->
             <?php if ($_SESSION['role'] === 'admin'): ?>
@@ -110,47 +127,33 @@ $result = $conn->query("SELECT * FROM jenis_kursus");
                 </form>
             <?php endif; ?>
 
-            <!-- Tabel Kursus -->
+            <!-- Daftar Kursus dalam Bentuk Card -->
             <h3>Daftar Kursus</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nama Kursus</th>
-                        <th>Gambar</th>
-                        <th>Deskripsi</th>
-                        <th>Harga</th>
-                        <th>Durasi</th>
-                        <?php if ($_SESSION['role'] === 'admin'): ?>
-                            <th>Aksi</th>
-                        <?php else: ?>
-                            <th>Aksi</th> <!-- Tombol pembayaran untuk user -->
-                        <?php endif; ?>
-                    </tr>
-                </thead>
-                <tbody>
+            <div class="card-container">
+                <?php if ($result->num_rows > 0): ?>
                     <?php while ($kursus = $result->fetch_assoc()): ?>
-                        <tr>
-                            <td><?php echo $kursus['nama']; ?></td>
-                            <td><img src="assets/<?php echo $kursus['gambar']; ?>" alt="<?php echo $kursus['nama']; ?>" width="50"></td>
-                            <td><?php echo $kursus['deskripsi']; ?></td>
-                            <td><?php echo "Rp " . number_format($kursus['harga'], 0, ',', '.'); ?></td>
-                            <td><?php echo $kursus['durasi']; ?> Bulan</td>
-                            <?php if ($_SESSION['role'] === 'admin'): ?>
-                                <td>
-                                    <a href="edit_kursus.php?id=<?php echo $kursus['id']; ?>" class="edit">Edit</a>
-                                    <a href="delete_kursus.php?id=<?php echo $kursus['id']; ?>" class="delete" onclick="return confirm('Apakah Anda yakin ingin menghapus kursus ini?')">Delete</a>
-                                </td>
-                            <?php else: ?>
-                                <!-- Tombol bayar untuk user -->
-                                <td>
-                                    <a href="pembayaran_sederhana.php?kursus_id=<?php echo $kursus['id']; ?>" class="btn">Bayar Sekarang</a>
-                                </td>
-                            <?php endif; ?>
-                        </tr>
+                        <div class="card">
+                            <img src="assets/<?php echo $kursus['gambar']; ?>" alt="<?php echo $kursus['nama']; ?>" class="card-img">
+                            <div class="card-content">
+                                <h4 class="card-title"><?php echo $kursus['nama']; ?></h4>
+                                <p class="card-description"><?php echo $kursus['deskripsi']; ?></p>
+                                <p class="card-price">Harga: <?php echo "Rp " . number_format($kursus['harga'], 0, ',', '.'); ?></p>
+                                <p class="card-duration">Durasi: <?php echo $kursus['durasi']; ?> Bulan</p>
+                                <div class="card-actions">
+                                    <?php if ($_SESSION['role'] === 'admin'): ?>
+                                        <a href="edit_kursus.php?id=<?php echo $kursus['id']; ?>" class="btn edit">Edit</a>
+                                        <a href="delete_kursus.php?id=<?php echo $kursus['id']; ?>" class="btn delete" onclick="return confirm('Apakah Anda yakin ingin menghapus kursus ini?')">Delete</a>
+                                    <?php else: ?>
+                                        <a href="pembayaran_sederhana.php?kursus_id=<?php echo $kursus['id']; ?>" class="btn">Bayar Sekarang</a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
                     <?php endwhile; ?>
-                </tbody>
-            </table>
-            
+                <?php else: ?>
+                    <p>Tidak ada kursus yang ditemukan untuk kata kunci "<strong><?php echo htmlspecialchars($search); ?></strong>".</p>
+                <?php endif; ?>
+            </div>
         </div>
     </section>
 </main>

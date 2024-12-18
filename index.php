@@ -12,28 +12,31 @@ session_start();
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Kursus Musik Profesional</h1>
-            <nav>
-                <ul>
-                    <li><a href="index.php">Beranda</a></li>
-                    <?php if (isset($_SESSION['user_id'])): ?>
-                        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                            <li><a href="admin_dashboard.php">Admin Dashboard</a></li>  <!-- Menampilkan Admin Dashboard untuk admin -->
-                        <?php else: ?>
-                            <li><a href="user_dashboard.php">Dashboard</a></li>  <!-- Menampilkan Dashboard untuk user -->
-                        <?php endif; ?>
-                        <li><a href="jenis_kursus.php">Jenis Kursus</a></li>
-                        <li><a href="logout.php">Logout</a></li>
+<header>
+    <div class="container">
+        <h1>Kursus Musik Profesional</h1>
+        <nav>
+            <ul>
+                <li><a href="index.php">Beranda</a></li>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <?php if ($_SESSION['role'] === 'admin'): ?>
+                        <li><a href="admin_dashboard.php">Admin Dashboard</a></li>
+                        <li><a href="jenis_kursus.php">Jenis Kursus</a></li> <!-- Added link for Admin to manage courses -->
                     <?php else: ?>
-                        <li><a href="login.php">Masuk</a></li>
-                        <li><a href="register.php">Daftar</a></li>
+                        <li><a href="jenis_kursus.php">Jenis Kursus</a></li> <!-- Navigasi Jenis Kursus untuk User -->
+                        <li><a href="profil.php">Profil</a></li> <!-- Navigasi Profil untuk User -->
                     <?php endif; ?>
-                </ul>
-            </nav>
-        </div>
-    </header>
+                    <li><a href="logout.php">Logout</a></li>
+                <?php else: ?>
+                    <li><a href="login.php">Masuk</a></li>
+                    <li><a href="register.php">Daftar</a></li>
+                <?php endif; ?>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
 
     <main>
         <!-- Hero Section -->
@@ -41,7 +44,12 @@ session_start();
             <div class="container">
                 <h2>Kembangkan Bakat Musikmu</h2>
                 <p>Belajar musik dengan para ahli. Kursus profesional untuk semua tingkat keterampilan. Bergabunglah dan jadilah maestro!</p>
-                <a href="register.php" class="btn">Bergabung Sekarang</a>
+                <!-- Tombol Bergabung Sekarang atau Edit Jenis Kursus berdasarkan role -->
+                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                    <a href="jenis_kursus.php" class="btn">Edit Jenis Kursus</a> <!-- Tombol untuk Admin -->
+                <?php else: ?>
+                    <a href="jenis_kursus.php" class="btn">Bergabung Sekarang</a> <!-- Tombol untuk User -->
+                <?php endif; ?>
             </div>
         </section>
 
@@ -52,21 +60,21 @@ session_start();
                 <div class="feature-list">
                     <div class="feature">
                         <div class="icon-bg">
-                            <img src="assets/gitar.jpg" alt="Ikon Gitar">
+                            <img src="assets/logo1.jpg" alt="Ikon Gitar">
                         </div>
                         <h3>Belajar Alat Musik Apapun</h3>
                         <p>Pilih dari berbagai kursus gitar, piano, drum, dan lainnya.</p>
                     </div>
                     <div class="feature">
                         <div class="icon-bg">
-                            <img src="assets/not.jpg" alt="Ikon Not Musik">
+                            <img src="assets/nott.jpg" alt="Ikon Not Musik">
                         </div>
                         <h3>Instruktur Profesional</h3>
                         <p>Pelajari langsung dari ahli dengan pengalaman bertahun-tahun.</p>
                     </div>
                     <div class="feature">
                         <div class="icon-bg">
-                            <img src="assets/jam.jpg" alt="Ikon Jadwal">
+                            <img src="assets/jammm.jpg" alt="Ikon Jadwal">
                         </div>
                         <h3>Jadwal Fleksibel</h3>
                         <p>Belajar kapan saja sesuai waktu yang Anda tentukan.</p>
